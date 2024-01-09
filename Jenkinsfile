@@ -87,6 +87,15 @@ pipeline {
             }
         }
 
+        stage('Patch to Dev ENV') {
+            steps {
+                echo 'Patch to Dev ENV'
+                sh '''
+                    kubectl patch deployment ${APP_NAME} -n ${DEV_PROJECT} -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"default-secret"}]}}}}'
+                '''
+            }
+        }
+
         stage('Deploy to Dev ENV') {
             steps {
                 echo 'Deploy to Dev ENV'
