@@ -6,12 +6,13 @@ pipeline {
         APP_TAG = "latest"
         APP_NAME = "nantaporn-app"
         APP_PORT = "3000"
-        DEV_PROJECT = "workshop"
-        SQ_SERVER = "https://sq.gmmo.tech"
-        ECR_SERVER = "299745677970.dkr.ecr.ap-southeast-1.amazonaws.com"
+        DEV_PROJECT = "dev"
+        SQ_SERVER = "https://sq.princhealth.tech"
+        // ECR_SERVER = "swr.ap-southeast-2.myhuaweicloud.com/princ"
+        ECR_SERVER = "swr.ap-southeast-2.myhuaweicloud.com/princhealth"
         AWS_DEFAULT_REGION = "ap-southeast-1"
-        AWS_DEFAULT_PROFILE = "default"
-        DOMAIN_NAME = "gmmo.tech"
+        AWS_DEFAULT_PROFILE = "princ-nonprod"
+        DOMAIN_NAME = "princhealth.tech"
 
     }
     
@@ -35,7 +36,7 @@ pipeline {
                 echo 'Pull code from SCM'
                 git(
                     url: "${APP_GIT_URL}",
-                    //credentialsId: 'gmmo-gitlab',
+                    //credentialsId: 'princ-gitlab',
                     branch: "${APP_BRANCH}"
                 )
             }
@@ -56,14 +57,14 @@ pipeline {
         //     }
         // }
 
-        stage('Logging into AWS ECR') {
-            steps {
-                echo "Logging into AWS ECR"
-                sh '''
-                    aws ecr get-login-password --region ${AWS_DEFAULT_REGION} --profile ${AWS_DEFAULT_PROFILE}| docker login --username AWS --password-stdin ${ECR_SERVER}
-                '''  
-            }
-        }
+        // stage('Logging into AWS ECR') {
+        //     steps {
+        //         echo "Logging into AWS ECR"
+        //         sh '''
+        //             aws ecr get-login-password --region ${AWS_DEFAULT_REGION} --profile ${AWS_DEFAULT_PROFILE}| docker login --username AWS --password-stdin ${ECR_SERVER}
+        //         '''  
+        //     }
+        // }
 
         stage('Build Docker Images') {
             steps {
@@ -87,20 +88,20 @@ pipeline {
             }
         }
 
-        stage('Patch to Dev ENV') {
-            steps {
-                echo 'Patch to Dev ENV'
-                sh '''
-                    kubectl patch deployment ${APP_NAME} -n ${DEV_PROJECT} -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"default-secret"}]}}}}'
-                '''
-            }
-        }
-
         stage('Deploy to Dev ENV') {
             steps {
                 echo 'Deploy to Dev ENV'
                 sh '''
                     kubectl create deployment ${APP_NAME} -n ${DEV_PROJECT} --image=${ECR_SERVER}/${APP_NAME}:${APP_TAG}
+                '''
+            }
+        }
+
+        stage('Patch to Dev ENV') {
+            steps {
+                echo 'Patch to Dev ENV'
+                sh '''
+                    kubectl patch deployment ${APP_NAME} -n ${DEV_PROJECT} -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"default-secret"}]}}}}'
                 '''
             }
         }
